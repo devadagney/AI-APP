@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Water Purifier Service Tracker</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <main class="container">
+    <h1>Water Purifier Service Tracker</h1>
+    <p class="sub">Track service due dates and send reminders to customers.</p>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <ul class="alerts">
+          {% for category, message in messages %}
+            <li class="{{ category }}">{{ message }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+
+    <section class="grid">
+      <div class="card">
+        <h2>Add Customer</h2>
+        <form method="post" action="{{ url_for('add_customer') }}" class="form-grid">
+          <label>Name <input name="name" required /></label>
+          <label>Phone <input name="phone" /></label>
+          <label>Email <input type="email" name="email" /></label>
+          <label>Purifier Model <input name="purifier_model" /></label>
+          <label>Last Service Date <input type="date" name="last_service_date" value="{{ today }}" required /></label>
+          <label>Interval (days) <input type="number" name="service_interval_days" value="180" min="1" required /></label>
+          <label class="span-2">Notes <textarea name="notes" rows="2"></textarea></label>
+          <button type="submit">Save Customer</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <h2>Due / Overdue</h2>
+        {% if due_customers %}
+          <ul class="due-list">
+            {% for c in due_customers %}
+              <li>
+                <strong>{{ c.name }}</strong> — {{ c.status }}
+                ({{ c.next_service_date }})
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p>No customers due right now.</p>
+        {% endif %}
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Customers</h2>
+      {% if customers %}
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Contact</th>
+            <th>Last Service</th>
+            <th>Next Service</th>
+            <th>Status</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in customers %}
+          <tr>
+            <td>{{ c.name }}<br><small>{{ c.purifier_model }}</small></td>
+            <td>{{ c.phone }}<br><small>{{ c.email }}</small></td>
+            <td>{{ c.last_service_date }}</td>
+            <td>{{ c.next_service_date }}</td>
+            <td><span class="badge {{ c.status|lower|replace(' ', '-') }}">{{ c.status }}</span></td>
+            <td>
+              <form method="post" action="{{ url_for('mark_serviced', customer_id=c.id) }}">
+                <button type="submit">Mark Serviced</button>
+              </form>
+              <form method="post" action="{{ url_for('send_reminder', customer_id=c.id) }}">
+                <button type="submit" class="secondary">Send Reminder</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+        <p>No customers yet.</p>
+      {% endif %}
+    </section>
+
+    <section class="card">
+      <h2>Recent Reminder Log</h2>
+      {% if reminder_log %}
+      <ul class="log">
+        {% for r in reminder_log %}
+          <li><strong>{{ r.customer_name }}</strong> via {{ r.channel }} at {{ r.sent_at }}<br><small>{{ r.message }}</small></li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p>No reminders sent yet.</p>
+      {% endif %}
+    </section>
+  </main>
+</body>
+</html>
